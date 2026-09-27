@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0c0d10">
+<title>45:00 — still</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@500;700;800&display=swap');
+:root{--ink:#0c0d10;--paper:#f6f0df;--muted:#8e8d86;--line:#2a2b2d;--lime:#d9ff4f}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:var(--ink);color:var(--paper);font-family:Manrope,sans-serif}
+.app{min-height:100vh;padding:26px 34px 30px;display:grid;grid-template-rows:auto 1fr auto}
+header,footer{display:flex;align-items:center;justify-content:space-between}.brand{font-weight:800;font-size:18px}.brand i{display:inline-block;width:12px;height:12px;background:var(--lime);border-radius:50%;margin-right:9px;box-shadow:0 0 18px var(--lime)}
+.mode,.status,.hint{font:11px 'DM Mono',monospace;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.actions{display:flex;gap:9px}.icon{border:1px solid var(--line);border-radius:99px;background:transparent;color:var(--paper);padding:10px 13px}
+main{display:grid;place-items:center;text-align:center}.wrap{width:min(1000px,100%)}
+.session{font:12px 'DM Mono',monospace;color:var(--muted);letter-spacing:.16em;text-transform:uppercase}
+.time{font-size:clamp(100px,20vw,300px);line-height:.85;font-weight:700;letter-spacing:-.09em;font-variant-numeric:tabular-nums}
+.time.done{color:var(--lime)}.progress{height:3px;width:min(560px,75vw);margin:38px auto 28px;background:var(--line)}.progress b{display:block;height:100%;background:var(--lime);width:0}
+.controls{display:flex;gap:11px;justify-content:center}.round,.start{height:54px;border-radius:99px}.round{width:54px;border:1px solid var(--line);background:transparent;color:var(--paper);font-size:22px}.start{min-width:145px;border:0;background:var(--lime);font-weight:800;color:#17180c}
+.presets{display:flex;gap:8px;align-items:center}.preset{border:1px solid var(--line);background:transparent;color:var(--paper);border-radius:99px;padding:7px 12px;font:11px 'DM Mono',monospace}.preset.active{background:var(--paper);color:var(--ink)}
+.custom{display:flex;gap:5px;margin-left:4px}.custom input{width:52px;border:1px solid var(--line);border-radius:99px;background:transparent;color:var(--paper);padding:7px;text-align:center}.custom button{border:1px solid var(--line);border-radius:99px;background:transparent;color:var(--paper);padding:7px 10px}
+footer{border-top:1px solid var(--line);padding-top:16px}
+@media(max-width:600px){.app{padding:20px}.mode{display:none}.time{font-size:25vw}.quote{display:none}.presets{gap:5px}.custom{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+<header><div class="brand"><i></i>still no procrastinate.</div><div class="mode" id="mode">deep work / 45 minutes</div><div class="actions"><button class="icon" id="full">fullscreen ↗</button></div></header>
+<main><div class="wrap">
+<div class="session">deep work</div>
+<div class="time" id="time">45:00</div>
+<div class="progress"><b id="bar"></b></div>
+<div class="controls"><button class="round" id="minus">−</button><button class="start" id="start">start focus</button><button class="round" id="plus">+</button></div>
+<p class="hint">space to start/pause · r to reset · f for fullscreen</p>
+</div></main>
+<footer>
+<div class="presets"><span class="mode">set a pace</span><button class="preset" data-m="25">25</button><button class="preset" data-m="50">50</button><button class="preset" data-m="90">90</button><div class="custom"><input id="custom" type="number" min="1" max="600" placeholder="min"><button id="set">set</button></div></div>
+<div class="status" id="status">45 minute focus set</div>
+</footer>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+let total=45*60, left=total, running=false, timer=null;
+function fmt(s){return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function render(){$('#time').textContent=fmt(left);document.title=fmt(left)+' — still';$('#bar').style.width=((1-left/total)*100)+'%';$('#mode').textContent='deep work / '+Math.ceil(total/60)+' minutes';document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('active',+b.dataset.m*60===total))}
+function stop(done=false){clearInterval(timer);timer=null;running=false;$('#start').textContent=done?'start again':'start focus';$('#status').textContent=done?'complete':'ready'}
+function tick(){if(left<=1){left=0;render();$('#time').classList.add('done');stop(true);return}left--;render()}
+function toggle(){if(!running){if(left===0)left=total;$('#time').classList.remove('done');running=true;$('#start').textContent='pause';$('#status').textContent='in focus';timer=setInterval(tick,1000)}else stop()}
+function adjust(n){if(running)return;total=Math.max(60,total+n*60);left=total;render()}
+$('#start').onclick=toggle;$('#plus').onclick=()=>adjust(1);$('#minus').onclick=()=>adjust(-1);
+document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>{if(running)return;total=+b.dataset.m*60;left=total;render()});
+$('#set').onclick=()=>{if(running)return;let n=Math.min(600,Math.max(1,+$('#custom').value||0));if(!n)return;total=n*60;left=total;render();$('#status').textContent=n+' minute focus set'};
+$('#custom').onkeydown=e=>{if(e.key==='Enter')$('#set').click()};
+$('#full').onclick=()=>document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
+document.onkeydown=e=>{if(e.target.tagName==='INPUT')return;if(e.code==='Space'){e.preventDefault();toggle()}if(e.key.toLowerCase()==='r'&&!running){left=total;render()}if(e.key.toLowerCase()==='f')$('#full').click()};
+render();
+</script>
+</body></html>
